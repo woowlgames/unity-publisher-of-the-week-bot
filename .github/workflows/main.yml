@@ -2,8 +2,8 @@ name: Weekly Unity Asset Scraper
 
 on:
   schedule:
-    # TESTING: Run every 5 minutes (remove this after testing!)
-    - cron: '*/5 * * * *'
+    # Run every Friday at 08:00 UTC (09:00 CET)
+    - cron: '0 8 * * 5'
   # Allow manual trigger for testing
   workflow_dispatch:
 
