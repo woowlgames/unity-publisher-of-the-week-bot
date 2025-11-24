@@ -167,21 +167,21 @@ def send_telegram_message(asset_data):
     # Note: Telegram MarkdownV2 requires escaping some characters, but basic Markdown is usually fine with 'Markdown' parse_mode
     # or we can use HTML. Let's use basic Markdown (or HTML if preferred).
     
-    # Using the requested format
+    # Using HTML format (more reliable than Markdown)
     message = (
-        f"Free this week \"**{asset_data['name']}**\" {asset_data['url']}?aid=1011lHuMX\n"
-        f"with the code \"{asset_data['code']}\".\n"
-        f"Also, 50% off publisher assets:\n"
-        f"{asset_data['publisher_url']}\n"
-        f"* {asset_data['end_date']}\n\n"
-        f"Enjoy!!"
+        f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
+        f'with the code "{asset_data["code"]}".\n'
+        f'Also, 50% off publisher assets:\n'
+        f'{asset_data["publisher_url"]}\n'
+        f'• {asset_data["end_date"]}\n\n'
+        f'Enjoy!!'
     )
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
         "text": message,
-        "parse_mode": "Markdown" # Or 'MarkdownV2' if we strictly escape
+        "parse_mode": "HTML"  # Changed from Markdown to HTML
     }
 
     try:
@@ -220,12 +220,12 @@ def main():
         if args.dry_run or args.test_message:
             print("\n--- GENERATED MESSAGE PREVIEW ---")
             message = (
-                f"Free this week \"**{asset_data['name']}**\" {asset_data['url']}?aid=1011lHuMX\n"
-                f"with the code \"{asset_data['code']}\".\n"
-                f"Also, 50% off publisher assets:\n"
-                f"{asset_data['publisher_url']}\n"
-                f"* {asset_data['end_date']}\n\n"
-                f"Enjoy!!"
+                f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
+                f'with the code "{asset_data["code"]}".\n'
+                f'Also, 50% off publisher assets:\n'
+                f'{asset_data["publisher_url"]}\n'
+                f'• {asset_data["end_date"]}\n\n'
+                f'Enjoy!!'
             )
             print(message)
             print("---------------------------------")
