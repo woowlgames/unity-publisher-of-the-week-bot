@@ -3,6 +3,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 import sys
+import random
 from datetime import datetime
 
 # --- Configuration ---
@@ -11,6 +12,30 @@ from datetime import datetime
 # If this page is heavily JavaScript-dependent, 'requests' might not see the content.
 # In that case, a headless browser like Selenium or Playwright would be needed.
 URL = "https://assetstore.unity.com/publisher-sale"
+
+# Random Friday greetings
+FRIDAY_GREETINGS = [
+    "🎉 Happy Friday! Time to level up your game dev journey!",
+    "🌟 It's Friday and Unity Asset Store knows it! Get ready for something awesome!",
+    "🚀 Friday vibes incoming! Your weekend game dev adventure starts now!",
+    "✨ TGIF! Unity's got a special gift to kickstart your creative weekend!",
+    "🎮 Happy Friday, developers! Let's end the week with a bang!",
+    "🌈 Friday feels + free assets = Perfect combo for game developers!",
+    "💎 It's Friday! Time to add some premium quality to your project!",
+    "🎊 Cheers to Friday and free Unity assets! Your project deserves this!",
+    "⚡ Friday energy is here! Grab this week's free asset and create magic!",
+    "🎁 Happy Friday! Unity's Publisher of the Week is bringing the goods!",
+    "🌟 Weekend mode: ACTIVATED! Start it right with this free asset!",
+    "🔥 It's Friday! Time to fuel your creative fire with premium assets!",
+    "🎯 Friday = Game dev freedom! Here's your weekly treasure!",
+    "💫 TGIF, devs! Your weekend project just got a whole lot better!",
+    "🏆 Happy Friday! Treat yourself to this week's amazing free asset!",
+    "🎨 Friday creativity boost incoming! Unity's got you covered!",
+    "🚀 It's Friday! Launch your weekend projects with this free gem!",
+    "✨ Happy Friday, creators! Time to make something incredible!",
+    "🎮 Weekend warriors, assemble! Here's your Friday power-up!",
+    "🌟 It's Friday and your game dev toolkit is about to get richer!"
+]
 
 # Telegram Configuration
 # These are loaded from Environment Variables (set in GitHub Secrets)
@@ -151,6 +176,25 @@ def scrape_unity_asset():
         print(f"Error during scraping: {e}")
         return None
 
+def format_telegram_message(asset_data):
+    """
+    Formats the Telegram message with a random Friday greeting.
+    Returns the formatted message string.
+    """
+    # Select a random Friday greeting
+    greeting = random.choice(FRIDAY_GREETINGS)
+    
+    message = (
+        f'{greeting}\n\n'
+        f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
+        f'with the code "<code>{asset_data["code"]}</code>".\n'
+        f'Also, 50% off publisher assets:\n'
+        f'{asset_data["publisher_url"]}\n'
+        f'• {asset_data["end_date"]}\n\n'
+        f'Enjoy!!'
+    )
+    return message
+
 def send_telegram_message(asset_data):
     """
     Sends a formatted message to the Telegram channel.
@@ -163,19 +207,8 @@ def send_telegram_message(asset_data):
         print("No asset data to send.")
         return
 
-    # Construct Markdown Message
-    # Note: Telegram MarkdownV2 requires escaping some characters, but basic Markdown is usually fine with 'Markdown' parse_mode
-    # or we can use HTML. Let's use basic Markdown (or HTML if preferred).
-    
-    # Using HTML format (more reliable than Markdown)
-    message = (
-        f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
-        f'with the code "<code>{asset_data["code"]}</code>".\n'
-        f'Also, 50% off publisher assets:\n'
-        f'{asset_data["publisher_url"]}\n'
-        f'• {asset_data["end_date"]}\n\n'
-        f'Enjoy!!'
-    )
+    # Format the message using the helper function
+    message = format_telegram_message(asset_data)
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     payload = {
@@ -197,44 +230,27 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Unity Asset Store Scraper")
     parser.add_argument("--dry-run", action="store_true", help="Print message to console instead of sending to Telegram")
-    parser.add_argument("--test-message", action="store_true", help="Use dummy data to test message format")
     args = parser.parse_args()
 
     print("Starting Unity Asset Store Scraper...")
     
-    if args.test_message:
-        print("--- TEST MODE: Using dummy data ---")
-        asset_data = {
-            "name": "Super Cool Asset",
-            "url": "https://assetstore.unity.com/packages/slug/12345",
-            "code": "HELLO-WORLD-123",
-            "publisher_url": "https://assetstore.unity.com/publishers/123",
-            "end_date": "Sunday, December 31, 2023"
-        }
-    else:
-        # 1. Scrape
-        asset_data = scrape_unity_asset()
+   
+    # 1. Scrape
+    asset_data = scrape_unity_asset()
     
     # 2. Send Message or Print
     if asset_data:
-        if args.dry_run or args.test_message:
+        if args.dry_run:
             print("\n--- GENERATED MESSAGE PREVIEW ---")
-            message = (
-                f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
-                f'with the code "<code>{asset_data["code"]}</code>".\n'
-                f'Also, 50% off publisher assets:\n'
-                f'{asset_data["publisher_url"]}\n'
-                f'• {asset_data["end_date"]}\n\n'
-                f'Enjoy!!'
-            )
+            # Use the same formatting function
+            message = format_telegram_message(asset_data)
             print(message)
             print("---------------------------------")
         else:
             send_telegram_message(asset_data)
     else:
         print("Scraping failed or returned no data. Exiting.")
-        if not args.test_message:
-            sys.exit(1)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
