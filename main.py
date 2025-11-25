@@ -6,6 +6,11 @@ import sys
 import random
 from datetime import datetime
 
+# Fix Unicode encoding for Windows console
+if sys.platform == "win32":
+    import codecs
+    sys.stdout = codecs.getwriter("utf-8")(sys.stdout.detach())
+
 # --- Configuration ---
 # Target URL for the "Publisher of the Week" promotion
 # NOTE: This URL is generic. The specific asset is usually dynamically loaded or part of this page.
@@ -133,7 +138,7 @@ def scrape_unity_asset():
                         
                         if date_match:
                             raw_date = date_match.group(1 if date_match.re.groups == 1 else 2).strip()
-                            sale_end_date = f"Sale and related free asset promotion end {raw_date}."
+                            sale_end_date = f"* Sale and related free asset promotion end {raw_date}."
                         else:
                             print(f"DEBUG: Could not find date. Page text snippet: {page_text[-500:]}")
 
@@ -168,7 +173,7 @@ def scrape_unity_asset():
             "name": asset_title,
             "url": asset_url,
             "code": coupon_code,
-            "publisher_url": publisher_url, # Might need specific logic to find this
+            "publisher_url": publisher_url,
             "end_date": sale_end_date
         }
 
@@ -190,7 +195,7 @@ def format_telegram_message(asset_data):
         f'with the code "<code>{asset_data["code"]}</code>".\n'
         f'Also, 50% off publisher assets:\n'
         f'{asset_data["publisher_url"]}\n'
-        f'• {asset_data["end_date"]}\n\n'
+        f'{asset_data["end_date"]}\n\n'
         f'Enjoy!!'
     )
     return message
