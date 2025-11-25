@@ -195,6 +195,41 @@ def format_telegram_message(asset_data):
     )
     return message
 
+def send_error_notification(error_type, error_details, include_timestamp=True):
+    """
+    Sends an error notification to the Telegram channel.
+    Useful for monitoring bot health in production.
+    """
+    if not BOT_TOKEN or not CHAT_ID:
+        print("Cannot send error notification: Telegram credentials not found.")
+        return
+    
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S UTC") if include_timestamp else ""
+    
+    error_message = (
+        f"🚨 <b>Unity Asset Scraper Error</b>\n\n"
+        f"<b>Error Type:</b> {error_type}\n"
+        f"<b>Details:</b>\n{error_details}\n\n"
+    )
+    
+    if include_timestamp:
+        error_message += f"<i>Time: {timestamp}</i>"
+    
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": error_message,
+        "parse_mode": "HTML"
+    }
+    
+    try:
+        print(f"Sending error notification: {error_type}")
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        print("Error notification sent successfully.")
+    except Exception as e:
+        print(f"Failed to send error notification: {e}")
+
 def send_telegram_message(asset_data):
     """
     Sends a formatted message to the Telegram channel.
@@ -223,8 +258,14 @@ def send_telegram_message(asset_data):
         response.raise_for_status()
         print("Message sent successfully!")
     except Exception as e:
-        print(f"Error sending Telegram message: {e}")
+        error_msg = f"Error sending Telegram message: {e}"
+        print(error_msg)
         print(f"Response: {response.text if 'response' in locals() else 'N/A'}")
+        # Send error notification
+        send_error_notification(
+            "Message Sending Failed",
+            f"Could not send the weekly asset message.\n\nError: {str(e)}\n\nResponse: {response.text if 'response' in locals() else 'N/A'}"
+        )
 
 def main():
     import argparse
@@ -249,7 +290,21 @@ def main():
         else:
             send_telegram_message(asset_data)
     else:
-        print("Scraping failed or returned no data. Exiting.")
+        error_msg = "Scraping failed or returned no data."
+        print(error_msg)
+        
+        # Send error notification (only in production, not during dry-run)
+        if not args.dry_run:
+            send_error_notification(
+                "Scraping Failed",
+                "Could not extract asset data from Unity Asset Store.\n\n"
+                "Possible causes:\n"
+                "• Page structure has changed\n"
+                "• Asset promotion is not active\n"
+                "• Network/connectivity issue\n\n"
+                "Please check the GitHub Actions logs for details."
+            )
+        
         sys.exit(1)
 
 if __name__ == "__main__":
