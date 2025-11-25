@@ -106,6 +106,68 @@ class MessageFormatter:
 
 
 # =============================================================================
+# ARCHIVE SERVICE CLASS
+# =============================================================================
+
+class ArchiveService:
+    """
+    Manages historical archive of scraped assets (Single Responsibility Principle).
+    Saves data to yearly JSON files with automatic rotation.
+    """
+    
+    def __init__(self, config: Config, archive_dir: str = "."):
+        self.config = config
+        self.archive_dir = archive_dir
+    
+    def _get_archive_filename(self) -> str:
+        """Get the archive filename for the current year."""
+        current_year = datetime.now().year
+        return f"{self.archive_dir}/assets_archive_{current_year}.json"
+    
+    def save_asset(self, asset_data: Dict[str, str]) -> bool:
+        """
+        Save asset data to the yearly archive file.
+        Returns True if successful, False otherwise.
+        """
+        import json
+        from pathlib import Path
+        
+        try:
+            archive_file = self._get_archive_filename()
+            
+            # Load existing data or create new list
+            if Path(archive_file).exists():
+                with open(archive_file, 'r', encoding='utf-8') as f:
+                    archive = json.load(f)
+            else:
+                archive = []
+            
+            # Add timestamp to the entry
+            entry = {
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "name": asset_data["name"],
+                "url": asset_data["url"] + "?aid=" + self.config.affiliate_id,
+                "code": asset_data["code"],
+                "publisher_url": asset_data["publisher_url"],
+                "end_date": asset_data["end_date"]
+            }
+            
+            # Append new entry
+            archive.append(entry)
+            
+            # Save back to file
+            with open(archive_file, 'w', encoding='utf-8') as f:
+                json.dump(archive, f, indent=2, ensure_ascii=False)
+            
+            print(f"📦 Asset archived to {archive_file}")
+            return True
+            
+        except Exception as e:
+            print(f"Error saving to archive: {e}")
+            return False
+
+
+# =============================================================================
 # ASSET PARSER CLASS
 # =============================================================================
 
@@ -358,12 +420,16 @@ def main():
     message_formatter = MessageFormatter(config)
     asset_scraper = AssetScraper(config, asset_parser)
     telegram_service = TelegramService(config, message_formatter)
+    archive_service = ArchiveService(config)
     
     # 1. Scrape
     asset_data = asset_scraper.scrape()
     
     # 2. Send Message or Print
     if asset_data:
+        # Save to archive first (before sending)
+        archive_service.save_asset(asset_data)
+        
         if args.dry_run:
             print("\n--- GENERATED MESSAGE PREVIEW ---")
             message = message_formatter.format_asset_message(asset_data)

@@ -7,9 +7,12 @@ Automated scraper that extracts Unity Asset Store's weekly free asset promotion 
 - 🎁 Automatically scrapes the weekly free asset from Unity's "Publisher of the Week" promotion
 - 📝 Extracts asset title, URL, coupon code, and sale end date
 - 🏢 Finds publisher URL (including 50% off publisher assets)
-- 📱 Sends formatted message to Telegram channel
+- 📱 Sends formatted message to Telegram channel with random Friday greetings
+- 📦 **Historical archive** - Saves all scraped assets to yearly JSON files (assets_archive_2025.json, etc.)
+- 🚨 **Error notifications** - Alerts via Telegram when scraping fails
 - ⚙️ GitHub Actions ready for scheduled automation
-- 🧪 Test modes for development (`--dry-run` and `--test-message`)
+- 🧪 Test modes for development (`--dry-run`)
+- 🏗️ **SOLID architecture** - Professional class-based design for maintainability
 
 ## Prerequisites
 
