@@ -55,13 +55,51 @@ pip install -r requirements.txt
 
 ### Environment Variables
 
-Set the following environment variables:
+#### Local Development
 
-```bash
-# Local development
+**Option 1: Set for current PowerShell session (Windows)**
+```powershell
+# Activate your virtual environment first
+.\.venv\Scripts\Activate.ps1
+
+# Set environment variables
+$env:TELEGRAM_BOT_TOKEN = "your_bot_token_here"
+$env:TELEGRAM_CHAT_ID = "your_chat_id_here"
+
+# Now run the script
+python main.py --test-message
+```
+
+**Option 2: Set for current CMD session (Windows)**
+```cmd
+# Activate your virtual environment first
+.\.venv\Scripts\activate.bat
+
+# Set environment variables
 set TELEGRAM_BOT_TOKEN=your_bot_token_here
 set TELEGRAM_CHAT_ID=your_chat_id_here
+
+# Now run the script
+python main.py --test-message
 ```
+
+**Option 3: Set for current Bash session (Linux/Mac)**
+```bash
+# Activate your virtual environment first
+source .venv/bin/activate
+
+# Set environment variables
+export TELEGRAM_BOT_TOKEN="your_bot_token_here"
+export TELEGRAM_CHAT_ID="your_chat_id_here"
+
+# Now run the script
+python main.py --test-message
+```
+
+> [!NOTE]
+> These environment variables are only set for the current terminal session. You'll need to set them again each time you open a new terminal.
+
+#### GitHub Actions
 
 For GitHub Actions, add these as repository secrets (Settings → Secrets → Actions):
 - `TELEGRAM_BOT_TOKEN`
@@ -70,6 +108,31 @@ For GitHub Actions, add these as repository secrets (Settings → Secrets → Ac
 ## Usage
 
 ### Run the Scraper
+
+#### Using TestBot.bat (Windows - Recommended)
+
+The `TestBot.bat` helper script makes it easy to run the scraper without manually setting environment variables:
+
+```cmd
+# Test with dummy data
+TestBot.bat "YOUR_BOT_TOKEN" "YOUR_CHAT_ID" --test-message
+
+# Dry run (preview message without sending to Telegram)
+TestBot.bat "YOUR_BOT_TOKEN" "YOUR_CHAT_ID" --dry-run
+
+# Run normally (sends message to Telegram)
+TestBot.bat "YOUR_BOT_TOKEN" "YOUR_CHAT_ID"
+```
+
+**Parameters:**
+- **Parameter 1** (required): Your Telegram bot token (e.g., `"123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"`)
+- **Parameter 2** (required): Your Telegram chat ID (e.g., `"-1001234567890"`)
+- **Parameter 3** (optional): `--test-message` or `--dry-run`
+
+> [!TIP]
+> Using `TestBot.bat` is the easiest way to test on Windows. It automatically activates your virtual environment and sets the credentials for you!
+
+#### Manual Python Execution
 
 ```bash
 # Run normally (sends message to Telegram)
@@ -81,6 +144,9 @@ python main.py --dry-run
 # Test with dummy data
 python main.py --test-message
 ```
+
+> [!NOTE]
+> When running manually, make sure you've set the environment variables first (see [Environment Variables](#environment-variables) section).
 
 ### GitHub Actions
 

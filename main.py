@@ -170,7 +170,7 @@ def send_telegram_message(asset_data):
     # Using HTML format (more reliable than Markdown)
     message = (
         f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
-        f'with the code "{asset_data["code"]}".\n'
+        f'with the code "<code>{asset_data["code"]}</code>".\n'
         f'Also, 50% off publisher assets:\n'
         f'{asset_data["publisher_url"]}\n'
         f'• {asset_data["end_date"]}\n\n'
@@ -221,7 +221,7 @@ def main():
             print("\n--- GENERATED MESSAGE PREVIEW ---")
             message = (
                 f'Free this week "<b>{asset_data["name"]}</b>" {asset_data["url"]}?aid=1011lHuMX\n'
-                f'with the code "{asset_data["code"]}".\n'
+                f'with the code "<code>{asset_data["code"]}</code>".\n'
                 f'Also, 50% off publisher assets:\n'
                 f'{asset_data["publisher_url"]}\n'
                 f'• {asset_data["end_date"]}\n\n'
