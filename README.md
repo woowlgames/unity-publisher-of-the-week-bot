@@ -25,7 +25,7 @@ Automated scraper that extracts Unity Asset Store's weekly free asset promotion 
 1. Clone the repository:
 ```bash
 git clone <your-repo-url>
-cd Telegram
+cd unity-publisher-of-the-week-bot
 ```
 
 2. Create and activate virtual environment:

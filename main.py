@@ -197,31 +197,50 @@ class AssetParser:
         return None
     
     @staticmethod
+    def _ensure_absolute_url(url: str) -> str:
+        """Ensure the URL is absolute."""
+        if not url:
+            return ""
+        if url.startswith("http"):
+            return url
+        return "https://assetstore.unity.com" + (url if url.startswith("/") else "/" + url)
+
+    @staticmethod
     def find_asset_link(soup: BeautifulSoup, asset_title: str = None) -> Optional[str]:
         """Find the asset URL from the page."""
-        # Try to find "Get your gift" button
-        link = soup.find("a", string=lambda t: t and "Get your gift" in t, href=True)
+        # 1. Try to find "Get your gift" button - checking nested text and case-insensitive
+        for a in soup.find_all("a", href=True):
+            text = a.get_text().lower()
+            if "get your" in text and ("gift" in text or "free" in text):
+                return AssetParser._ensure_absolute_url(a['href'])
         
-        # If not found, look for package links
-        if not link:
-            link = soup.find("a", href=lambda h: h and "/packages/" in h)
+        # 2. If asset_title is provided, search for a link containing that title
+        if asset_title:
+            # Look for links containing /packages/ and matching title
+            for a in soup.find_all("a", href=lambda h: h and "/packages/" in h):
+                if asset_title.lower() in a.get_text().lower():
+                    return AssetParser._ensure_absolute_url(a['href'])
         
-        if link and link.get('href'):
-            url = link['href']
-            if not url.startswith("http"):
-                url = "https://assetstore.unity.com" + url
-            return url
+        # 3. Fallback: only if we have nothing else, look for any package link
+        # But prioritize those that aren't obviously common ones
+        link = soup.find("a", href=lambda h: h and "/packages/" in h)
+        if link:
+            return AssetParser._ensure_absolute_url(link['href'])
+            
         return None
     
     @staticmethod
     def find_publisher_url(soup: BeautifulSoup) -> Optional[str]:
         """Find the publisher URL from the asset page."""
+        # Look for publisher link in the main asset info section
+        # Unity usually has a specific layout for this
         pub_link = soup.find("a", href=lambda h: h and "/publishers/" in h)
-        if pub_link and pub_link.get('href'):
-            url = pub_link['href']
-            if not url.startswith("http"):
-                url = "https://assetstore.unity.com" + url
-            return url
+        
+        # Try to find one that is NOT just a random link (e.g. avoid footer)
+        # Usually the publisher link is near the asset title or has a specific class
+        # But a general search is okay if we are on the correct asset page.
+        if pub_link:
+            return AssetParser._ensure_absolute_url(pub_link['href'])
         return None
 
 
@@ -285,33 +304,53 @@ class AssetScraper:
                     
                     # Try to find asset title
                     container = parent.find_parent("div")
-                    if container:
-                        title_tag = container.find("h3") or container.find("h2") or container.find("h1")
-                        if title_tag:
-                            asset_title = title_tag.get_text(strip=True)
+                    
+                    # Try to find asset title - look in container then in siblings/parent
+                    title_tag = None
+                    search_scope = container
+                    for _ in range(3): # Look up to 3 levels up if title not found
+                        if not search_scope: break
+                        title_tag = search_scope.find(["h3", "h2", "h1"])
+                        if title_tag: break
+                        search_scope = search_scope.parent
                         
-                        # Try to find asset URL
-                        link_url = self.parser.find_asset_link(container, asset_title)
-                        if not link_url:
-                            link_url = self.parser.find_asset_link(soup, asset_title)
-                        if link_url:
-                            asset_url = link_url
-                        
-                        # Extract sale end date
-                        page_text = soup.get_text(" ", strip=True)
-                        end_date = self.parser.parse_sale_end_date(page_text)
-                        if end_date:
-                            sale_end_date = end_date
-                        else:
-                            print(f"DEBUG: Could not find date. Page text snippet: {page_text[-500:]}")
-                        
-                        # Fetch publisher URL from asset page
-                        if asset_url and asset_url != self.config.publisher_sale_url:
-                            asset_soup = self._make_request(asset_url)
-                            if asset_soup:
-                                pub_url = self.parser.find_publisher_url(asset_soup)
-                                if pub_url:
-                                    publisher_url = pub_url
+                    if title_tag:
+                        asset_title = title_tag.get_text(strip=True)
+                    
+                    # Try to find asset URL
+                    # Priority 1: Search in the container
+                    link_url = self.parser.find_asset_link(container, asset_title)
+                    
+                    # Priority 2: Search in the whole page but specifically for the title
+                    if not link_url:
+                        link_url = self.parser.find_asset_link(soup, asset_title)
+                    
+                    if link_url:
+                        asset_url = link_url
+                    
+                    # VALIDATION: If we have a title and a URL, check if they seem to match
+                    # (Prevent picking up a random "Featured" asset)
+                    if asset_title != "Unknown Asset" and "/packages/" in asset_url:
+                        url_slug = asset_url.split("/")[-1].split("-")
+                        # Simple check: at least one word from the title should be in the URL slug
+                        title_words = [w.lower() for w in re.findall(r'\w+', asset_title) if len(w) > 3]
+                        if title_words and not any(w in asset_url.lower() for w in title_words):
+                            print(f"WARNING: Asset title '{asset_title}' does not match URL '{asset_url}'. Resetting URL.")
+                            asset_url = self.config.publisher_sale_url # Reset to safe default
+                    
+                    # Extract sale end date
+                    page_text = soup.get_text(" ", strip=True)
+                    end_date = self.parser.parse_sale_end_date(page_text)
+                    if end_date:
+                        sale_end_date = end_date
+                    
+                    # Fetch publisher URL from asset page
+                    if asset_url and "/packages/" in asset_url:
+                        asset_soup = self._make_request(asset_url)
+                        if asset_soup:
+                            pub_url = self.parser.find_publisher_url(asset_soup)
+                            if pub_url:
+                                publisher_url = pub_url
                     
                     break
         
