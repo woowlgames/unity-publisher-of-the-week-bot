@@ -208,6 +208,9 @@ class AssetParser:
     @staticmethod
     def find_asset_link(soup: BeautifulSoup, asset_title: str = None) -> Optional[str]:
         """Find the asset URL from the page."""
+        if soup is None:
+            return None
+
         # 1. Try to find "Get your gift" button - checking nested text and case-insensitive
         for a in soup.find_all("a", href=True):
             text = a.get_text().lower()
@@ -232,6 +235,9 @@ class AssetParser:
     @staticmethod
     def find_publisher_url(soup: BeautifulSoup) -> Optional[str]:
         """Find the publisher URL from the asset page."""
+        if soup is None:
+            return None
+
         # Look for publisher link in the main asset info section
         # Unity usually has a specific layout for this
         pub_link = soup.find("a", href=lambda h: h and "/publishers/" in h)
@@ -304,6 +310,9 @@ class AssetScraper:
                     
                     # Try to find asset title
                     container = parent.find_parent("div")
+                    if not container:
+                        print("WARNING: Could not find main container for the free asset.")
+                        return None
                     
                     # Try to find asset title - look in container then in siblings/parent
                     title_tag = None
