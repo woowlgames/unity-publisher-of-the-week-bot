@@ -486,22 +486,22 @@ def main():
         else:
             telegram_service.send_message(asset_data)
     else:
-        error_msg = "Scraping failed or returned no data."
-        print(error_msg)
+        warning_msg = (
+            "No free asset detected this week or web structure has changed.\n"
+            f"Check URL: {config.publisher_sale_url}"
+        )
+        print(f"WARNING: {warning_msg}")
         
-        # Send error notification (only in production, not during dry-run)
+        # Send notice notification (only in production, not during dry-run)
         if not args.dry_run:
             telegram_service.send_error_notification(
-                "Scraping Failed",
-                "Could not extract asset data from Unity Asset Store.\n\n"
-                "Possible causes:\n"
-                "• Page structure has changed\n"
-                "• Asset promotion is not active\n"
-                "• Network/connectivity issue\n\n"
-                "Please check the GitHub Actions logs for details."
+                "No Free Asset Detected / Structure Changed",
+                "No free asset has been detected this week or the web structure has changed.\n\n"
+                f"You can check it manually at:\n{config.publisher_sale_url}"
             )
         
-        sys.exit(1)
+        # Exit with success so GitHub Actions finishes cleanly without failing workflow
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()
